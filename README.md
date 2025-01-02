@@ -120,6 +120,7 @@ pip install flask
 ```
 
 First create a simple app "app.py" returning "Hello World" localy.
+Attention, ne pas laisser debug=True en production. 
 
 To run app.py
 ```
