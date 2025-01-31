@@ -126,3 +126,5 @@ To run app.py
 ```
 python3 app.py
 ```
+Set some html templates with inheritence and redirection.
+Next step : set bootstrap and make a landing page.
