@@ -3,8 +3,13 @@
 {% block title %} Index Page {% endblock %}
 
 {% block content %}
+<div class="centered-content">
+<img src="{{ url_for('static', filename='images/ccorp_logo.png') }}" class="img-fluid responsive-image" alt="...">
+</div>
 
-<p class="text-center">Hello World !</p>
+<p class="text-center pochaevsk-regular">BTC : 16fycMLUVHkNJDq2WbRcbeSnFCa71QTVre</p>
+
+
 <a href="{{ url_for('about') }}">About Page</a>
 
 {% endblock %}

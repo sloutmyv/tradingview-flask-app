@@ -8,3 +8,23 @@
     color: #333;
     font-size: 14px;
 }
+
+.responsive-image {
+    max-width: 80vw;
+    max-height: 80vh;
+    object-fit: contain;
+}
+
+.centered-content {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative; /* Permet un meilleur centrage */
+}
+
+.pochaevsk-regular {
+    font-family: "Pochaevsk", serif;
+    font-weight: 400;
+    font-style: normal;
+  }
