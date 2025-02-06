@@ -1,5 +1,9 @@
 # tradingview-flask-app
-A little app designed to catch webhooks post requests 
+A little app designed to catch webhooks post requests from Trading view
+
+Source : 
+* Part Time Larry :  https://www.youtube.com/watch?v=gMRee2srpe8
+
 
 ## Langage de programation
 Installer le langage [Python](https://www.python.org/downloads/)
@@ -57,19 +61,6 @@ git log
 
 ### Le fichier ".gitignore"
 Il est créé à la racine du projet pour indiquer les fichier à ne pas upload sur le répertoire github en ligne, à inclure (pour un projet Django):
-```
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Data
-data/
-```
 
 ## Environnement virtuel
 Installer le package d’environnement virtuel : 
@@ -120,11 +111,15 @@ pip install flask
 ```
 
 First create a simple app "app.py" returning "Hello World" localy.
-Attention, ne pas laisser debug=True en production. 
+-->  Attention, ne pas laisser debug=True en production. 
 
 To run app.py
 ```
 python3 app.py
 ```
-Set some html templates with inheritence and redirection.
-Next step : set bootstrap and make a landing page.
+Write some html templates with inheritence and redirection.
+Create static file for image and css
+Set bootstrap and make a base page using jinja syntax.
+
+
+--> Deal with POST REQUEST
