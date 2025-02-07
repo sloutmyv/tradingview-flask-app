@@ -122,4 +122,18 @@ Create static file for image and css
 Set bootstrap and make a base page using jinja syntax.
 
 
---> Deal with POST REQUEST
+## Simulate Webhooks from TradingView :
+Trading view webhook are POST requests.
+Download "Insominia rest" App for simulating POST request.
+* Créer une nouvelle "Request collection"
+* Add a new post request with post url from flast app
+* On body choose "other" and paste some test text
+* hit send button and voila 
+
+## Binance :
+
+Goal is to place order on binance with Binance API.
+Get API_KEY and API_SECRET on binance account.
+Go to USER/ACCOUNT/API MANAGEMENT
+Create API.
+
