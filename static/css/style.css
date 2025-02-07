@@ -28,3 +28,18 @@
     font-weight: 400;
     font-style: normal;
   }
+
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+/* Centrer le tableau */
+.table-container {
+    display: flex;
+    justify-content: center;
+}
+/* Centrer les en-têtes du tableau */
+th {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
