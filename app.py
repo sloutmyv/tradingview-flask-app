@@ -17,6 +17,10 @@ def index():
 def about():
     return render_template('about.html')
 
+@app.route('/test')
+def test():
+    return render_template('test.html')
+
 @app.route('/binance_account')
 def binance():
     info = client.get_account()
@@ -28,7 +32,7 @@ def binance():
     df['total'] = df['free'] + df['locked']
     df = df[(df["free"] != 0) | (df["locked"] != 0)]
     df = df[~df['asset'].isin(['ETHW', 'LDUSDC'])] # Supprimer les lignes où 'asset' est 'ETHW' ou 'LDUSDC'
-    
+
     REFERENCE = 'USDT'
     df["pair"] = df["asset"] + REFERENCE 
 
@@ -62,10 +66,8 @@ def binance():
         "reference": "$",
         "percentage_of_total": "%"
     })
-    
-    print(df)
 
-    return render_template('binance.html', df=df, titles=df.columns.values)
+    return render_template('binance.html', df=df, titles=df.columns.values, total_usd=float(total_reference))
 
 
 @app.route('/webhook_order_one', methods=['POST'])
