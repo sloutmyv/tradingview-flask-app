@@ -26,10 +26,19 @@ def get_binance_portfolio():
             return row['total'] * float(client.get_avg_price(symbol=row['pair'])['price'])
 
     df['reference'] = df.apply(apply_formula, axis=1)
+    df = df.loc[df['reference'] > 5]
     df = df.sort_values(by='reference', ascending=False)
 
     total_reference = df['reference'].sum() # Calcul du pourcentage de chaque ligne par rapport au total de la colonne 'reference'
     df['percentage_of_total'] = (df['reference'] / total_reference) * 100
+
+    liste_pair = df["pair"].to_list()
+    elements_to_remove = ['USDTUSDT','USDCUSDT']
+    liste_pair = [x for x in liste_pair if x not in elements_to_remove]
+    dict_awp = {}
+    for i in liste_pair:
+        dict_awp[i]=weighted_avg_price(i, df[df['pair'] == i]['total'].iloc[0])
+
 
     # Désactiver la notation scientifique pour l'affichage
     df['percentage_of_total'] = df['percentage_of_total'].apply(lambda x: '{:.1f}'.format(x))   
@@ -49,4 +58,88 @@ def get_binance_portfolio():
         "percentage_of_total": "%"
     })
 
-    return df, float(total_reference)
+    return df, float(total_reference), dict_awp
+
+def get_orders(symbol, nb=10):
+    orders = client.get_all_orders(symbol=symbol, limit=nb)
+    df = pd.DataFrame(orders)
+    df = df.drop(columns=['orderListId','timeInForce','icebergQty','selfTradePreventionMode','isWorking','workingTime','orderId','origQuoteOrderQty'])
+    df['time'] = pd.to_datetime(df['time'], unit='ms')
+    df['updateTime'] = pd.to_datetime(df['updateTime'], unit='ms')
+
+    df = df.sort_values(by='time', ascending=False)
+    
+
+    def categorize_order(client_id):
+        if client_id.startswith("ios"):
+            return "IOS"
+        elif client_id.startswith("web"):
+            return "WEB"
+        else:
+            return "API"
+
+    df["clientOrderId"] = df["clientOrderId"].apply(categorize_order)
+
+    # Convertir les colonnes en float avant d'appliquer le formatage
+    cols_to_format = ['price', 'executedQty','origQty', 'cummulativeQuoteQty', 'stopPrice']
+
+    for col in cols_to_format:
+        df[col] = df[col].astype(float)  # Conversion en float pour éviter les erreurs de formatage
+
+    # Désactiver la notation scientifique pour l'affichage
+    df['price'] = df['price'].apply(lambda x: '{:.1f}'.format(x))   
+    df['executedQty'] = df['executedQty'].apply(lambda x: '{:.4f}'.format(x))
+    df['origQty'] = df['origQty'].apply(lambda x: '{:.4f}'.format(x))
+    df['cummulativeQuoteQty'] = df['cummulativeQuoteQty'].apply(lambda x: '{:.1f}'.format(x))
+    df['stopPrice'] = df['stopPrice'].apply(lambda x: '{:.1f}'.format(x))
+
+    # Renommer les colonnes
+    df = df.rename(columns={
+        "symbol": "PAIR",
+        "clientOrderId": "TOOLS",
+        "price": "LIMIT PRICE",
+        'origQty':'ORDER QTY',
+        "executedQty": "EXECUTED QTY",
+        "cummulativeQuoteQty": "$",
+        "status": "STATUS",
+        "type": "TYPE",
+        "side" : "SIDE",
+        "stopPrice" : "STOP PRICE",
+        "time" : "CREATED TIME",
+        "updateTime" : "EXECUTED TIME",
+    })
+
+    new_order = ['PAIR', 'SIDE', 'TYPE','STOP PRICE','LIMIT PRICE','ORDER QTY','EXECUTED QTY','$','CREATED TIME','EXECUTED TIME','STATUS']
+    df=df[new_order]
+
+    return df
+    
+
+def weighted_avg_price(symbol, qty_limit):
+    trades = client.get_my_trades(symbol=symbol)
+    df = pd.DataFrame(trades)
+    df['time'] = pd.to_datetime(df['time'], unit='ms')
+    df = df.sort_values(by='time', ascending=False)
+
+    df_buy = df[df["isBuyer"] == True]
+
+    # Calculer la somme cumulative de qty
+    cumulative_qty = 0
+    total_value = 0
+    total_qty = 0
+
+    # Ajouter les achats tant que la somme des quantités est inférieure ou égale à qty_limit
+    for index, row in df_buy.iterrows():
+        if cumulative_qty + float(row["qty"]) <= qty_limit:
+            cumulative_qty += float(row["qty"])
+            total_value += float(row["price"]) * float(row["qty"])
+            total_qty += float(row["qty"])
+        else:
+            break
+
+    # Calcul du prix moyen pondéré
+    if total_qty > 0:
+        return total_value / total_qty
+    else:
+        return None  # Si aucune quantité n'a été ajoutée
+

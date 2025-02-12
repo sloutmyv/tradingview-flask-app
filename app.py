@@ -1,5 +1,5 @@
 import json, config 
-from binance_api import get_binance_portfolio
+from binance_api import get_binance_portfolio, get_orders
 from flask import Flask, render_template, request 
 
 app = Flask(__name__, template_folder='templates')
@@ -18,8 +18,9 @@ def test():
 
 @app.route('/binance_account')
 def binance():
-    df, total_reference = get_binance_portfolio()
-    return render_template('binance.html', df=df, titles=df.columns.values, total_usd=float(total_reference))
+    df, total_reference, dict_wap = get_binance_portfolio()
+    df_order = get_orders('BTCUSDT', 10)
+    return render_template('binance.html', df=df, titles=df.columns.values, total_usd=float(total_reference), dict_wap=dict_wap, df_order=df_order, titles_order=df_order.columns.values)
 
 
 @app.route('/webhook_order_one', methods=['POST'])

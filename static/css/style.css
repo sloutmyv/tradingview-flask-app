@@ -40,6 +40,10 @@ th {
     vertical-align: middle !important;
 }
 
+.small-table {
+    font-size: 12px; /* Ajuste selon ton besoin */
+}
+
 
 .cell {
     display: flex;
