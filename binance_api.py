@@ -5,19 +5,20 @@ from binance.client import Client
 client = Client(config.BINANCE_API_KEY,config.BINANCE_API_SECRET)
 
 REFERENCE = 'USDT'
+COLATERAL = ['USDT','USDC']
 
 def get_binance_portfolio():
     info = client.get_account()
+
+    # Lister les assets en porteufeuille 
     df = pd.DataFrame(info['balances'])
 
-    df["free"] = pd.to_numeric(df["free"], errors="coerce")
-    df["locked"] = pd.to_numeric(df["locked"], errors="coerce") 
-    df['total'] = df['free'] + df['locked']
-
-    df = df[(df["free"] != 0) | (df["locked"] != 0)]
-    df = df[~df['asset'].isin(['ETHW', 'LDUSDC'])] # Supprimer les lignes où 'asset' est 'ETHW' ou 'LDUSDC'
-
-    df["pair"] = df["asset"] + REFERENCE 
+    df["free"] = pd.to_numeric(df["free"], errors="coerce") # conversion en chiffre
+    df["locked"] = pd.to_numeric(df["locked"], errors="coerce") # conversion en chiffre   
+    df = df[(df["free"] != 0) | (df["locked"] != 0)] # Suppression des assets à qté nulle
+    df['total'] = df['free'] + df['locked'] # calcul du total libre et bloqué sur un ordre 
+    df = df[~df['asset'].isin(['ETHW', 'LDUSDC'])] # Suppression des assets 'ETHW' ou 'LDUSDC'
+    df["pair"] = df["asset"] + REFERENCE # création d'une colonne pair avec une référence 
 
     def apply_formula(row):
         if row['asset'] == REFERENCE:
@@ -25,9 +26,9 @@ def get_binance_portfolio():
         else:
             return row['total'] * float(client.get_avg_price(symbol=row['pair'])['price'])
 
-    df['reference'] = df.apply(apply_formula, axis=1)
-    df = df.loc[df['reference'] > 5]
-    df = df.sort_values(by='reference', ascending=False)
+    df['reference'] = df.apply(apply_formula, axis=1) # création d'une colonne reference indiquant le prix des assets par rapport à cette référence 
+    df = df.loc[df['reference'] > 5] # suppression des assets dont la valeur référence est inférieur à 5
+    df = df.sort_values(by='reference', ascending=False) # tri des assets possédé du plus important au moins important
 
     total_reference = df['reference'].sum() # Calcul du pourcentage de chaque ligne par rapport au total de la colonne 'reference'
     df['percentage_of_total'] = (df['reference'] / total_reference) * 100
@@ -38,7 +39,6 @@ def get_binance_portfolio():
     dict_awp = {}
     for i in liste_pair:
         dict_awp[i]=weighted_avg_price(i, df[df['pair'] == i]['total'].iloc[0])
-
 
     # Désactiver la notation scientifique pour l'affichage
     df['percentage_of_total'] = df['percentage_of_total'].apply(lambda x: '{:.1f}'.format(x))   
@@ -113,7 +113,7 @@ def get_orders(symbol, nb=10):
     df=df[new_order]
 
     return df
-    
+
 
 def weighted_avg_price(symbol, qty_limit):
     trades = client.get_my_trades(symbol=symbol)
@@ -143,3 +143,19 @@ def weighted_avg_price(symbol, qty_limit):
     else:
         return None  # Si aucune quantité n'a été ajoutée
 
+def merge_and_sort_dataframes(dfs, sort_column):
+    """
+    Fusionne plusieurs DataFrames ayant les mêmes colonnes 
+    et trie par date du plus récent au plus ancien.
+
+    :param dfs: Liste de DataFrames à fusionner
+    :param date_column: Nom de la colonne contenant les dates
+    :return: DataFrame fusionné et trié
+    """
+    # Fusionner tous les DataFrames en un seul
+    merged_df = pd.concat(dfs, ignore_index=True)
+
+    # Trier du plus récent au plus ancien
+    sorted_df = merged_df.sort_values(by=sort_column, ascending=False)
+
+    return sorted_df

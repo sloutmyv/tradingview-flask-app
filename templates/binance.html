@@ -9,17 +9,24 @@
             <h2 class="text-center fw-bold pochaevsk-regular">Binance Account</h2>
         </div>
     </div>
+    <div class="container my-3">
+        <div class="separator">
+            <hr>
+            <div class="dot"></div>
+            <hr>
+        </div>
+    </div>
     <div class="d-flex justify-content-center">
         <div class="col-12 col-lg-8">
             <div class="row">
                 <div class="col-12">
-                    <p class="text-center pochaevsk-regular fs-4">Portefeuille Crypto</p>
+                    <p class="text-center pochaevsk-regular fs-5">Portefeuille</p>
                 </div>
             </div>
             <div class="row">
                 <div class="col-12 d-flex justify-content-center">
-                    <div class="table-container">
-                        <table class="table table-striped table-bordered text-center small-table">
+                    <div class="table-container table-responsive">
+                        <table class="table table-striped table-bordered text-center small-table table-sm">
                             <thead class="table-dark">
                                 <tr>
                                     {% for title in titles %}
@@ -44,15 +51,15 @@
                 </div>
             </div>
             <div class="row justify-content-center">
-                <div class="col-6">
-                    <hr style="border: 1px solid black;"> <!-- Barre de séparation -->
+                <div class="col-5">
+                    <hr style="border: 0.7px solid black;">
                 </div>
             </div>
             <div row>
                 <div class="col-12">
-                    <p class="text-center pochaevsk-regular fs-4">Prix Moyen Pondéré</p>
-                    <table class="table table-bordered table-striped text-center small-table">
-                        <thead>
+                    <p class="text-center pochaevsk-regular fs-5">Prix Moyen Pondéré</p>
+                    <table class="table table-striped table-bordered text-center small-table table-sm">
+                        <thead class="table-dark">
                             <tr>
                                 <th scope="col">ASSET</th>
                                 <th scope="col">PRIX MOYEN PONDERE</th>
@@ -72,21 +79,22 @@
         </div>
     </div>
     <div class="row justify-content-center">
-        <div class="col-6">
-            <hr style="border: 1px solid black;"> <!-- Barre de séparation -->
+        <div class="col-5">
+            <hr style="border: 0.7px solid black;">
         </div>
+    </div>
     </div>
     <div class="d-flex justify-content-center">
         <div class="col-12 col-lg-8">
             <div class="row">
                 <div class="col-12">
-                    <p class="text-center pochaevsk-regular fs-4">Derniers ordres</p>
+                    <p class="text-center pochaevsk-regular fs-5">Derniers ordres</p>
                 </div>
             </div>
             <div class="row">
                 <div class="col-12 d-flex justify-content-center">
                     <div class="table-container">
-                        <table class="table table-striped table-bordered text-center small-table">
+                        <table class="table table-striped table-bordered text-center small-table table-sm">
                             <thead class="table-dark">
                                 <tr>
                                     {% for title in titles_order %}
@@ -96,7 +104,8 @@
                             </thead>
                             <tbody>
                                 {% for row in df_order.itertuples(index=False) %}
-                                    <tr>
+                                <tr class="{% if row.STATUS == 'NEW' %}table-success
+                                           {% elif row.STATUS == 'CANCELED' %}table-danger{% endif %}">
                                         {% for cell in row %}
                                             <td>{{ cell }}</td>
                                         {% endfor %}
