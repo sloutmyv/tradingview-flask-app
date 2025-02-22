@@ -33,12 +33,13 @@ def get_binance_portfolio():
     total_reference = df['reference'].sum() # Calcul du pourcentage de chaque ligne par rapport au total de la colonne 'reference'
     df['percentage_of_total'] = (df['reference'] / total_reference) * 100
 
-    liste_pair = df["pair"].to_list()
-    elements_to_remove = ['USDTUSDT','USDCUSDT']
-    liste_pair = [x for x in liste_pair if x not in elements_to_remove]
+    liste_asset = df["asset"].to_list()
+    filtered_cryptos = [c for c in liste_asset if c not in ['USDT', 'USDC']]
     dict_awp = {}
-    for i in liste_pair:
-        dict_awp[i]=weighted_avg_price(i, df[df['pair'] == i]['total'].iloc[0])
+    for i in filtered_cryptos:
+        dict_awp[i]=weighted_avg_price(i, df[df['asset'] == i]['total'].iloc[0])
+        print(df[df['asset'] == i]['total'].iloc[0])
+    
 
     # Désactiver la notation scientifique pour l'affichage
     df['percentage_of_total'] = df['percentage_of_total'].apply(lambda x: '{:.1f}'.format(x))   
@@ -58,9 +59,17 @@ def get_binance_portfolio():
         "percentage_of_total": "%"
     })
 
-    return df, float(total_reference), dict_awp
+    return df, float(total_reference), dict_awp, filtered_cryptos
 
 def get_orders(symbol, nb=10):
+    """
+    Cette fonction renvoi la liste des 10 dernier ordres créer pour ce
+    symbol
+
+    :param symbol: BTCUSDT par exemple
+    :param nb: qté des derniers ordes demandé
+    :return: df des nb ordres passé pour ce symbol
+    """
     orders = client.get_all_orders(symbol=symbol, limit=nb)
     df = pd.DataFrame(orders)
     df = df.drop(columns=['orderListId','timeInForce','icebergQty','selfTradePreventionMode','isWorking','workingTime','orderId','origQuoteOrderQty'])
@@ -115,13 +124,29 @@ def get_orders(symbol, nb=10):
     return df
 
 
-def weighted_avg_price(symbol, qty_limit):
-    trades = client.get_my_trades(symbol=symbol)
-    df = pd.DataFrame(trades)
-    df['time'] = pd.to_datetime(df['time'], unit='ms')
-    df = df.sort_values(by='time', ascending=False)
+def weighted_avg_price(asset, qty_limit):
+    """
+    Cette fonction permet de calculer le pmp d'un asset relativement à un 
+    ensemble de colateral choisi pour les trades (ici UDST, USDC)
 
-    df_buy = df[df["isBuyer"] == True]
+    :param asset: asset (BTC, SOL...)
+    :param qty_limit: qté de l'asset en portefeuille
+    :return: Prix moyen pondéré des assets (en fonction des colaterals)
+    """
+    list_df = []
+    for i in COLATERAL:
+        pair = asset + i
+        trades = client.get_my_trades(symbol=pair)
+        df = pd.DataFrame(trades)
+        df['time'] = pd.to_datetime(df['time'], unit='ms')
+        df = df.sort_values(by='time', ascending=False)
+        list_df.append(df)
+
+    # Fusionner tous les DataFrames en un seul
+    merged_df = pd.concat(list_df, ignore_index=True)
+    merged_df = merged_df.sort_values(by='time', ascending=False)
+    df_buy = merged_df[merged_df["isBuyer"] == True]
+    print(df_buy)
 
     # Calculer la somme cumulative de qty
     cumulative_qty = 0
@@ -130,10 +155,11 @@ def weighted_avg_price(symbol, qty_limit):
 
     # Ajouter les achats tant que la somme des quantités est inférieure ou égale à qty_limit
     for index, row in df_buy.iterrows():
-        if cumulative_qty + float(row["qty"]) <= qty_limit:
-            cumulative_qty += float(row["qty"])
-            total_value += float(row["price"]) * float(row["qty"])
-            total_qty += float(row["qty"])
+        reel = float(row["qty"])-float(row["commission"])
+        if cumulative_qty + reel <= qty_limit:
+            cumulative_qty += reel
+            total_value += float(row["price"]) * reel
+            total_qty += reel
         else:
             break
 
@@ -143,17 +169,26 @@ def weighted_avg_price(symbol, qty_limit):
     else:
         return None  # Si aucune quantité n'a été ajoutée
 
-def merge_and_sort_dataframes(dfs, sort_column):
+def merge_and_sort_dataframes(liste, sort_column):
     """
-    Fusionne plusieurs DataFrames ayant les mêmes colonnes 
-    et trie par date du plus récent au plus ancien.
+    Cette fonction prend en entrée une liste d'assets.
+    Son but est de sortir un df de l'ensemble des ordres de ces assets en fonction 
+    des colaterals définit ('COLATERAL')
+    Cette fonction appel la fonction get_order
 
-    :param dfs: Liste de DataFrames à fusionner
-    :param date_column: Nom de la colonne contenant les dates
+    :param liste: liste des assets 
+    :param sort_column: Nom de la colonne de tri
     :return: DataFrame fusionné et trié
     """
     # Fusionner tous les DataFrames en un seul
-    merged_df = pd.concat(dfs, ignore_index=True)
+    liste_dfs=[]
+    for i in liste:
+        for j in COLATERAL:
+            symbol = i + j
+            df=get_orders(symbol)
+            liste_dfs.append(df)
+
+    merged_df = pd.concat(liste_dfs, ignore_index=True)
 
     # Trier du plus récent au plus ancien
     sorted_df = merged_df.sort_values(by=sort_column, ascending=False)

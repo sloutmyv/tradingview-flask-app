@@ -137,3 +137,4 @@ Get API_KEY and API_SECRET on binance account.
 Go to USER/ACCOUNT/API MANAGEMENT
 Create API.
 
+--> Récupérer les versements et voir impact sur prix moyen pondéré

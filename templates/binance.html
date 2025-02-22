@@ -23,6 +23,9 @@
                     <p class="text-center pochaevsk-regular fs-5">Portefeuille</p>
                 </div>
             </div>
+            <div class="col-12">
+                <p class="text-center pochaevsk-regular">Total : {{ total_usd | round(2) }} $</p>
+            </div>
             <div class="row">
                 <div class="col-12 d-flex justify-content-center">
                     <div class="table-container table-responsive">
@@ -46,9 +49,6 @@
                         </table>
                     </div>
                 </div>
-                <div class="col-12">
-                    <p class="text-center pochaevsk-regular">Total : {{ total_usd | round(2) }} $</p>
-                </div>
             </div>
             <div class="row justify-content-center">
                 <div class="col-5">
@@ -68,7 +68,7 @@
                         <tbody>
                             {% for ASSET, PMP in dict_wap.items() %}
                             <tr>
-                                <td>{{ ASSET[:-4] }}</td>
+                                <td>{{ ASSET }}</td>
                                 <td>{{ PMP | round(2)}}</td>
                             </tr>
                             {% endfor %}
