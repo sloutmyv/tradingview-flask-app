@@ -138,3 +138,4 @@ Go to USER/ACCOUNT/API MANAGEMENT
 Create API.
 
 --> Récupérer les versements et voir impact sur prix moyen pondéré
+--> Commencer à écrire les ordres d'achat par rapport au webhook.

@@ -1,5 +1,5 @@
 import json, config 
-from binance_api import get_binance_portfolio, get_orders, merge_and_sort_dataframes
+from binance_api import get_binance_portfolio, merge_and_sort_dataframes, withdrawal, place_order_with_tp_sl
 from flask import Flask, render_template, request 
 
 app = Flask(__name__, template_folder='templates')
@@ -20,7 +20,8 @@ def test():
 def binance():
     df, total_reference, dict_wap, filtered_cryptos = get_binance_portfolio()
     df_order = merge_and_sort_dataframes(filtered_cryptos, 'CREATED TIME')
-    return render_template('binance.html', df=df, titles=df.columns.values, total_usd=float(total_reference), dict_wap=dict_wap, df_order=df_order, titles_order=df_order.columns.values)
+    df_wh=withdrawal()
+    return render_template('binance.html', df=df, titles=df.columns.values, total_usd=float(total_reference), dict_wap=dict_wap, df_order=df_order, titles_order=df_order.columns.values, df_wh=df_wh, titles_wh=df_wh.columns.values)
 
 
 @app.route('/webhook_order_one', methods=['POST'])
@@ -37,8 +38,11 @@ def strategy_one():
     else:
         #######
         # PYTHON CODE TO EXECUTE ORDER
-        info = client.get_account()
-        print(info)
+        # Exemple d'utilisation
+        place_order_with_tp_sl(
+            symbol="BTCUSDT", quantity=0.001, entry_type="BUY", 
+            order_type="LIMIT", entry_price="80000", tp_price="98000", sl_price="78000"
+        )   
         print(data['ticker'])
         #######
         return {

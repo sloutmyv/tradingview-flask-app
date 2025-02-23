@@ -1,6 +1,7 @@
 import pandas as pd
 import config 
 from binance.client import Client
+from binance.enums import SIDE_BUY, SIDE_SELL, ORDER_TYPE_MARKET, ORDER_TYPE_LIMIT, ORDER_TYPE_STOP_LOSS_LIMIT, TIME_IN_FORCE_GTC
 
 client = Client(config.BINANCE_API_KEY,config.BINANCE_API_SECRET)
 
@@ -38,9 +39,7 @@ def get_binance_portfolio():
     dict_awp = {}
     for i in filtered_cryptos:
         dict_awp[i]=weighted_avg_price(i, df[df['asset'] == i]['total'].iloc[0])
-        print(df[df['asset'] == i]['total'].iloc[0])
     
-
     # Désactiver la notation scientifique pour l'affichage
     df['percentage_of_total'] = df['percentage_of_total'].apply(lambda x: '{:.1f}'.format(x))   
     df['reference'] = df['reference'].apply(lambda x: '{:.1f}'.format(x))
@@ -146,7 +145,6 @@ def weighted_avg_price(asset, qty_limit):
     merged_df = pd.concat(list_df, ignore_index=True)
     merged_df = merged_df.sort_values(by='time', ascending=False)
     df_buy = merged_df[merged_df["isBuyer"] == True]
-    print(df_buy)
 
     # Calculer la somme cumulative de qty
     cumulative_qty = 0
@@ -194,3 +192,72 @@ def merge_and_sort_dataframes(liste, sort_column):
     sorted_df = merged_df.sort_values(by=sort_column, ascending=False)
 
     return sorted_df
+
+def withdrawal():
+    w_h = client.get_withdraw_history()
+    df = pd.DataFrame(w_h)
+    df = df.drop(columns=['id','status','walletType','txKey','confirmNo','info','transferType','txId','network'])
+    
+    new_order = ['coin','amount','transactionFee','address','applyTime','completeTime']
+    df=df[new_order]
+
+    return df
+
+def place_order_with_tp_sl(symbol, quantity, entry_type, entry_price=None, order_type="MARKET", tp_price=None, sl_price=None):
+    """
+    Passe un ordre (Market ou Limit) avec Take Profit et Stop Loss.
+
+    :param symbol: La paire de trading, ex: "BTCUSDT"
+    :param quantity: Quantité à acheter/vendre
+    :param entry_type: "BUY" ou "SELL"
+    :param entry_price: Prix d'entrée (nécessaire si order_type="LIMIT")
+    :param order_type: "MARKET" ou "LIMIT"
+    :param tp_price: Prix du Take Profit (facultatif)
+    :param sl_price: Prix du Stop Loss (facultatif)
+    """
+    try:
+        side = SIDE_BUY if entry_type.upper() == "BUY" else SIDE_SELL
+        order = None
+
+        # Passer l'ordre d'entrée
+        if order_type.upper() == "MARKET":
+            order = client.order_market(symbol=symbol, side=side, quantity=quantity)
+        elif order_type.upper() == "LIMIT":
+            if not entry_price:
+                raise ValueError("entry_price est requis pour un ordre LIMIT")
+            order = client.order_limit(
+                symbol=symbol, side=side, quantity=quantity, price=entry_price, timeInForce=TIME_IN_FORCE_GTC
+            )
+        else:
+            raise ValueError("order_type doit être 'MARKET' ou 'LIMIT'")
+
+        print(f"Ordre {order_type} exécuté: {order}")
+
+        # Placer le Take Profit (si défini)
+        tp_order = None
+        if tp_price:
+            tp_order = client.order_limit_sell(
+                symbol=symbol, quantity=quantity, price=tp_price
+            ) if side == SIDE_BUY else client.order_limit_buy(
+                symbol=symbol, quantity=quantity, price=tp_price
+            )
+            print(f"Take Profit placé: {tp_order}")
+
+        # 3Placer le Stop Loss (si défini)
+        sl_order = None
+        if sl_price:
+            sl_order = client.create_order(
+                symbol=symbol,
+                side=SIDE_SELL if side == SIDE_BUY else SIDE_BUY,
+                type=ORDER_TYPE_STOP_LOSS_LIMIT,
+                quantity=quantity,
+                price=sl_price,  # Prix limite
+                stopPrice=sl_price,  # Prix déclencheur
+                timeInForce=TIME_IN_FORCE_GTC
+            )
+            print(f"Stop Loss placé: {sl_order}")
+
+        return order, tp_order, sl_order
+
+    except Exception as e:
+        print(f"Erreur lors de l'exécution de l'ordre: {e}")
